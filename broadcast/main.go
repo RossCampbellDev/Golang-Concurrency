@@ -43,9 +43,11 @@ func begin(cond *sync.Cond) {
 	cond.Signal() // wakes up one goroutine that is waiting on cond
 }
 
+type testFunc func(int)
+
 // don't return until the function has complete
 // which only happens once the broadcaster signal has been received
-func prepareForBroadcast(fn func(), broadcaster *sync.Cond) {
+func prepareForBroadcast(fn testFunc, n int, broadcaster *sync.Cond) {
 	var wg sync.WaitGroup
 	wg.Add(1)
 
@@ -54,7 +56,7 @@ func prepareForBroadcast(fn func(), broadcaster *sync.Cond) {
 		broadcaster.L.Lock()
 		defer broadcaster.L.Unlock()
 		broadcaster.Wait()
-		fn()
+		fn(n)
 	}()
 	wg.Wait()
 }
@@ -64,18 +66,14 @@ func broadcastStart() {
 	var wg sync.WaitGroup
 	wg.Add(3)
 
-	prepareForBroadcast(func() {
-		fmt.Println("job 1 done")
+	f1 := func(n int) {
+		fmt.Printf("job %d done\n", n)
 		wg.Done()
-	}, broadcaster)
-	prepareForBroadcast(func() {
-		fmt.Println("job 2 done")
-		wg.Done()
-	}, broadcaster)
-	prepareForBroadcast(func() {
-		fmt.Println("job 3 done")
-		wg.Done()
-	}, broadcaster)
+	}
+
+	prepareForBroadcast(f1, 1, broadcaster)
+	prepareForBroadcast(f1, 2, broadcaster)
+	prepareForBroadcast(f1, 3, broadcaster)
 
 	broadcaster.Broadcast() // finally, send a broadcast signal to the cond that all our functions are waiting on
 	wg.Wait()               // don't return until we've done our broadcast
