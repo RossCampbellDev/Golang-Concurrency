@@ -11,6 +11,11 @@ func main() {
 	myChannel <- "First Message"
 	myChannel <- "Second Message"
 
-	fmt.Println(<-myChannel)
-	fmt.Println(<-myChannel)
+	// fmt.Println(<-myChannel)
+	// fmt.Println(<-myChannel)
+
+	close(myChannel)
+	for msg := range myChannel {
+		fmt.Println(msg)
+	}
 }
